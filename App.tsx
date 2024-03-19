@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { WebMidi } from 'webmidi';
-import NoteProgressBar from './NoteProgressBar';
-import RotaryEncoderIndicator from './RotaryEncoderIndicator';
+import NoteDisplay from './components/NoteDisplay';
+import RotaryEncoderIndicator from './components/RotaryEncoderIndicator';
+import PitchBendDisplay from './components/PitchBendDisplay';
 
 export default function App() {
 	const [isReady, setIsReady] = useState(false);
 	const [devices, setDevices] = useState([]);
-	const [currentNoteValue, setCurrentNoteValue] = useState(0); // MIDI note value state
-	const [rotaryValues, setRotaryValues] = useState([0,0,0,0]); // Rotary encoder value state
+
+	const [currentPitchBendValue, setCurrentPitchBendValue] = useState(0.5); // MIDI note value state
+	const [currentNoteValue, setCurrentNoteValue] = useState(""); // MIDI note value state
+	const [rotaryValues, setRotaryValues] = useState([0.0,0.0,0.0,0.0]); // Rotary encoder value state
 
   const [selectedDevice, setSelectedDevice] = useState(null);
 
@@ -19,6 +22,7 @@ export default function App() {
 				WebMidi.addListener("connected", updateDevices);
 				WebMidi.addListener("disconnected", updateDevices);
 
+        // Unmount
 				return () => {
 					WebMidi.removeListener("connected", updateDevices);
 					WebMidi.removeListener("disconnected", updateDevices);
@@ -36,7 +40,7 @@ export default function App() {
 		setSelectedDevice(input);
 		input.addListener("noteon", "all", (e) => {
 			console.log(`Note on: ${e.note.name}${e.note.octave}`);
-			setCurrentNoteValue(e.note.value);
+			setCurrentNoteValue(`${e.note.name}${e.note.octave}`);
 		});
 
 		// Listen to control change events from the OP-Z's rotary encoders
@@ -53,25 +57,57 @@ export default function App() {
 				}
 			});
 		});
+
+    input.addListener("pitchbend", "all", (e)=>{
+		console.log(`Pitchbend: ${e.value}`);
+		// Apply the transformation formula directly
+		const transformedValue = (e.value + 1) / 2;
+		setCurrentPitchBendValue(transformedValue);
+	});
 	};
 
 	return (
 		<View style={styles.container}>
 			{isReady ? (
 				devices.map((device, index) => (
-					<TouchableOpacity
-						key={index}
-						onPress={() => startListeningToDevice(device)}
-					>
-						<Text>
-							Device {index + 1}: {device.name}
-						</Text>
+					<View>
+						<TouchableOpacity
+							key={index}
+							onPress={() => startListeningToDevice(device)}
+						>
+							<Text style={styles.textContainer}>
+								Device {index + 1}: {device.name}
+							</Text>
+						</TouchableOpacity>
 
-            {rotaryValues.map((rotaryValue, rIndex) => (
-            <RotaryEncoderIndicator key={rIndex} value={rotaryValue} maxValue={1} />
-          ))}
+						{/* Display Rotary encoder */}
+						{selectedDevice && (
+							<View>
+								<View style={styles.horizontalContainer}>
+									{/* Display Notes */}
+									{
+										<NoteDisplay
+											noteValue={currentNoteValue}
+										></NoteDisplay>
+									}
+									{rotaryValues.map((rotaryValue, rIndex) => (
+										<RotaryEncoderIndicator
+											key={rIndex}
+											value={rotaryValue}
+											maxValue={1}
+										/>
+									))}
+								</View>
 
-					</TouchableOpacity>
+								{
+									<PitchBendDisplay
+										value={currentPitchBendValue}
+										maxValue={1}
+									></PitchBendDisplay>
+								}
+							</View>
+						)}
+					</View>
 				))
 			) : (
 				<Text>Did not find connected devices.</Text>
@@ -87,4 +123,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  horizontalContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    backgroundColor: '#333'
+  },
+  textContainer: {
+    fontWeight: 'bold'
+  }
 });

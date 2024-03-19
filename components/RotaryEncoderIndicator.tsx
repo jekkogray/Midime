@@ -1,5 +1,5 @@
 import React from 'react';
-import { Animated } from 'react-native';
+import { Animated, StyleSheet } from 'react-native';
 import { CircularProgress } from 'react-native-circular-progress';
 
 const RotaryEncoderIndicator = ({ value, maxValue }) => (
@@ -14,12 +14,19 @@ const RotaryEncoderIndicator = ({ value, maxValue }) => (
   >
     {
       (fill) => (
-        <Animated.Text style={{ fontSize: 20 }}>
-          {Math.round(maxValue * (fill / 100))}
+        <Animated.Text style={ styles.textContainer}>
+			{value.toFixed(2)}
         </Animated.Text>
       )
     }
   </CircularProgress>
 );
+
+const styles = StyleSheet.create ({
+  textContainer: {
+    color: 'white' ,
+    fontWeight: '100'
+  }
+});
 
 export default RotaryEncoderIndicator;
