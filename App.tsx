@@ -4,14 +4,18 @@ import { WebMidi } from 'webmidi';
 import NoteDisplay from './components/NoteDisplay';
 import RotaryEncoderIndicator from './components/RotaryEncoderIndicator';
 import PitchBendDisplay from './components/PitchBendDisplay';
+import ThreeCanvas from './components/ThreeCanvas';
+import HelicopterCanvas from './components/HelicopterCanvas'
 
 export default function App() {
+	const [foundDevices, setFoundDevices] = useState(false);
 	const [isReady, setIsReady] = useState(false);
 	const [devices, setDevices] = useState([]);
 
 	const [currentPitchBendValue, setCurrentPitchBendValue] = useState(0.5); // MIDI note value state
-	const [currentNoteValue, setCurrentNoteValue] = useState(""); // MIDI note value state
+	const [currentNote, setCurrentNote] = useState(null); // MIDI note value state
 	const [rotaryValues, setRotaryValues] = useState([0.0,0.0,0.0,0.0]); // Rotary encoder value state
+	const rotaryColors = ['#10933f','#0dacc8', "#ffff00", "#ff8080" ]
 
   const [selectedDevice, setSelectedDevice] = useState(null);
 
@@ -33,14 +37,15 @@ export default function App() {
 
 	const updateDevices = () => {
 		setDevices(WebMidi.inputs);
-		setIsReady(WebMidi.inputs.length > 0);
+		setFoundDevices(WebMidi.inputs.length > 0);
 	};
 
 	const startListeningToDevice = (input) => {
 		setSelectedDevice(input);
 		input.addListener("noteon", "all", (e) => {
 			console.log(`Note on: ${e.note.name}${e.note.octave}`);
-			setCurrentNoteValue(`${e.note.name}${e.note.octave}`);
+			setCurrentNote(e.note);
+
 		});
 
 		// Listen to control change events from the OP-Z's rotary encoders
@@ -50,10 +55,12 @@ export default function App() {
 			input.addListener("controlchange", "all", (e) => {
 				if (e.controller.number === ccNumber) {
 					console.log(`Rotary ${ccNumber} changed to ${e.value}`);
-					// Create a new array with updated values for the rotary encoder
 					// Create a new array with the updated value
-          setRotaryValues(currentValues => currentValues.map((value, index) =>
-          index === ccIndex ? e.value : value));
+					setRotaryValues((currentValues) =>
+						currentValues.map((value, index) =>
+							index === ccIndex ? e.value : value
+						)
+					);
 				}
 			});
 		});
@@ -66,28 +73,54 @@ export default function App() {
 	});
 	};
 
+	useEffect(()=>{
+		if (!isReady) {
+			let checker = rotaryValues.every(v => v.toFixed(2) === '0.50');
+			setIsReady(checker);
+		}
+	},[rotaryValues]);
+
 	return (
 		<View style={styles.container}>
-			{isReady ? (
+			{foundDevices ? (
 				devices.map((device, index) => (
 					<View>
-						<TouchableOpacity
-							key={index}
-							onPress={() => startListeningToDevice(device)}
-						>
-							<Text style={styles.textContainer}>
-								Device {index + 1}: {device.name}
-							</Text>
-						</TouchableOpacity>
+						{!selectedDevice && (
+							<TouchableOpacity
+								key={index}
+								onPress={() => startListeningToDevice(device)}
+							>
+								<Text style={styles.textContainer}>
+									Device {index + 1}: {device.name}
+								</Text>
+							</TouchableOpacity>
+						)}
 
 						{/* Display Rotary encoder */}
 						{selectedDevice && (
 							<View>
+								{/* Add 3D display */}
+								{isReady && (
+									<ThreeCanvas
+										note={currentNote}
+										rotaryValues={rotaryValues}
+									/>
+								)}
+
+								{!isReady && (
+									<View style={styles.setToDefault}>
+										<Text style={styles.setToDefaultText}>Set Encoders to 0.5</Text>
+									</View>
+								)}
+
+								<Text style={styles.textContainer}>
+									Device {index + 1}: {device.name}
+								</Text>
 								<View style={styles.horizontalContainer}>
 									{/* Display Notes */}
 									{
 										<NoteDisplay
-											noteValue={currentNoteValue}
+											note={currentNote}
 										></NoteDisplay>
 									}
 									{rotaryValues.map((rotaryValue, rIndex) => (
@@ -95,6 +128,7 @@ export default function App() {
 											key={rIndex}
 											value={rotaryValue}
 											maxValue={1}
+											tintColor={rotaryColors[rIndex]}
 										/>
 									))}
 								</View>
@@ -110,7 +144,7 @@ export default function App() {
 					</View>
 				))
 			) : (
-				<Text>Did not find connected devices.</Text>
+				<Text>No devices.</Text>
 			)}
 		</View>
 	);
@@ -130,5 +164,19 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     fontWeight: 'bold'
+  },
+  setToDefault:{
+	height:500,
+	width: 'auto',
+	backgroundColor: '#333',
+    alignItems: 'center',
+    justifyContent: 'center',
+	maxWidth: 640,
+  },
+  setToDefaultText: {
+    fontWeight: 'bold',
+	fontSize: 100,
+	color: "#ff8080",
+	textAlign:'center'
   }
 });

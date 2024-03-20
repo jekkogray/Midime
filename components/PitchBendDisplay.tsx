@@ -7,7 +7,9 @@ const PitchBendDisplay = ({ value, maxValue }) => (
 const styles = StyleSheet.create({
 	progressBar: {
 		display: 'flex',
-		width: 'auto'
+		width: 'auto',
+		tintColor: '#333'
 	}
+
 });
 export default  PitchBendDisplay;
