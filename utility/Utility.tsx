@@ -25,4 +25,10 @@ const midiToNoteMapping = {
 	76: 'E5'
   };
 
-  export default midiToNoteMapping;
+  const Colors = {
+	green: '#10933f',
+	blue:'#0dacc8',
+	yellow:"#ffff00",
+	red:"#ff8080"
+  }
+  export {midiToNoteMapping, Colors};

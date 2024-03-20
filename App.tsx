@@ -5,17 +5,18 @@ import NoteDisplay from './components/NoteDisplay';
 import RotaryEncoderIndicator from './components/RotaryEncoderIndicator';
 import PitchBendDisplay from './components/PitchBendDisplay';
 import ThreeCanvas from './components/ThreeCanvas';
-import HelicopterCanvas from './components/HelicopterCanvas'
+import BallCanvas from './components/BallCanvas'
+import {Colors} from './utility/Utility';
 
 export default function App() {
 	const [foundDevices, setFoundDevices] = useState(false);
-	const [isReady, setIsReady] = useState(false);
+	const [isReady, setIsReady] = useState(true);
 	const [devices, setDevices] = useState([]);
 
 	const [currentPitchBendValue, setCurrentPitchBendValue] = useState(0.5); // MIDI note value state
 	const [currentNote, setCurrentNote] = useState(null); // MIDI note value state
-	const [rotaryValues, setRotaryValues] = useState([0.0,0.0,0.0,0.0]); // Rotary encoder value state
-	const rotaryColors = ['#10933f','#0dacc8', "#ffff00", "#ff8080" ]
+	const [rotaryValues, setRotaryValues] = useState([0.5,0.5,0.5,0.0]); // Rotary encoder value state
+	const rotaryColors = [Colors.green, Colors.blue, Colors.yellow, Colors.red]
 
   const [selectedDevice, setSelectedDevice] = useState(null);
 
@@ -58,7 +59,7 @@ export default function App() {
 					// Create a new array with the updated value
 					setRotaryValues((currentValues) =>
 						currentValues.map((value, index) =>
-							index === ccIndex ? e.value : value
+							index === ccIndex ? parseFloat(e.value.toFixed(2)) : parseFloat(value.toFixed(2))
 						)
 					);
 				}
@@ -75,7 +76,7 @@ export default function App() {
 
 	useEffect(()=>{
 		if (!isReady) {
-			let checker = rotaryValues.every(v => v.toFixed(2) === '0.50');
+			let checker = rotaryValues.every(v => v === 0.50);
 			setIsReady(checker);
 		}
 	},[rotaryValues]);
@@ -101,10 +102,11 @@ export default function App() {
 							<View>
 								{/* Add 3D display */}
 								{isReady && (
-									<ThreeCanvas
-										note={currentNote}
-										rotaryValues={rotaryValues}
-									/>
+									<BallCanvas note={currentNote} rotaryValues={rotaryValues}/>
+									// <ThreeCanvas
+									// 	note={currentNote}
+									// 	rotaryValues={rotaryValues}
+									// />
 								)}
 
 								{!isReady && (

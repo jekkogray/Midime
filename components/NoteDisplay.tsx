@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import midiToNoteMapping from '../utility/Utility'
+import {midiToNoteMapping} from '../utility/Utility'
 
 function isSharp(noteNumber) {
 	  // Define the starting MIDI note number for C3 as a reference point
